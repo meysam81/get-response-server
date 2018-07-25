@@ -9,8 +9,12 @@
                   flags :: 2#00100000 | 2#00010000,
                   tracking_id :: integer(),
                   actor :: module()}).
+-record(parsed_buffer, {framed, buffered}).
+
+
 
 -define(FRAME_HEADER_BYTE_SIZE, 11).
+-define(MAX_FRAME_BYTE_SIZE, 65535).
 
 -define(FRAME_LEN_BYTE_SIZE, 4).
 -define(FRAME_LEN_BIT_SIZE, 32).

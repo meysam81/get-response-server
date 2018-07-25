@@ -1,7 +1,9 @@
 -module(my_app_v4_codec).
 
 -export([encode_frame/1,
-         deframe_decode/1]).
+         deframe_decode/1,
+         parse_buffer/2]).
+
 
 -include("my_app_v4.hrl").
 -include("my_app_v4_sample_func.hrl").
@@ -81,4 +83,42 @@ decode_object(Payload, Code) ->
             Error;
         [{_Code, Name, _Actor, Codec}] ->
             Codec:decode_msg(Payload, Name)
+    end.
+
+
+
+
+
+parse_buffer(OldBuffer, NewData) ->
+    NewBuffer = <<OldBuffer/binary, NewData/binary>>,
+    parse_buffer(#parsed_buffer{framed = <<>>, buffered = NewBuffer}).
+parse_buffer(#parsed_buffer{buffered = <<>>} = Buffer) ->
+    Buffer;
+parse_buffer(#parsed_buffer{framed = <<>>, buffered = <<>>}) ->
+    {malformed_frame, empty};
+parse_buffer(#parsed_buffer{framed = Framed, buffered = Buffered} = Buffer) ->
+    case get_frame(Buffered) of
+        {complete_frame, NewFrame, <<>>} ->
+            #parsed_buffer{framed = <<Framed/binary, NewFrame/binary>>,
+                           buffered = <<>>};
+        {complete_frame, NewFrame, NewBuffer} ->
+            parse_buffer(#parsed_buffer
+                         {framed = <<Framed/binary, NewFrame/binary>>,
+                          buffered = NewBuffer});
+        {incomplete_frame, Buffered} ->
+            Buffer;
+        {malformed_frame, too_large} = Malformed ->
+            ?LOG_ERROR("frame is larger than ~p byte",
+                       [?MAX_FRAME_BYTE_SIZE]),
+            Malformed
+    end.
+get_frame(<<FrameLen:?FRAME_LEN_BIT_SIZE/integer, _/binary>> = Buffer) ->
+    case byte_size(Buffer) of
+        BufferLen when BufferLen >= ?MAX_FRAME_BYTE_SIZE ->
+            {malformed_frame, too_large};
+        BufferLen when BufferLen >= FrameLen ->
+            <<NewFrame:FrameLen/binary, NewBuffer/binary>> = Buffer,
+            {complete_frame, NewFrame, NewBuffer};
+        BufferLen when BufferLen < FrameLen ->
+            {incomplete_frame, Buffer}
     end.
