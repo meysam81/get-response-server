@@ -23,23 +23,57 @@
 %%% API
 %%%===================================================================
 start(Transport, Socket, Opts) ->
-    gen_server:start_link(?MODULE, [[Transport, Socket, Opts]], []).
+    init([Transport, Socket, Opts]).
 
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
 init([Transport, Socket, _Opts]) ->
+    proc_lib:init_ack({ok, self()}),
+
+
     State = #state{socket = Socket,
                    transport = Transport,
                    buffer = <<>>},
+
+
+    gen_server:enter_loop(?MODULE, [], State),
+
     {ok, State}.
 handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
-handle_cast(_Request, State) ->
+
+
+handle_cast(#message{} = Message, #state{transport = Transport,
+                                         socket = Socket} = State) ->
+    {ok, FramedMsg} = my_app_v4_codec:encode_frame(Message),
+    Transport:send(Socket, FramedMsg),
+    {noreply, State};
+handle_cast(Request, State) ->
+    ?LOG_DEBUG("Request: ~p", [Request]),
     {noreply, State}.
-handle_info(_Info, State) ->
+
+
+handle_info({tcp, Socket, Data}, #state{socket = Socket,
+                                        buffer = Buffer} = State) ->
+    case my_app_v4_codec:parse_buffer(Buffer, Data) of
+        #parsed_buffer{framed = Framed, buffered = Buffered} ->
+            Msgs = [my_app_v4_codec:deframe_decode(Frame) ||
+                       Frame <- Framed],
+            [dispatch_messages(Msg#message{socket_pid = self()})
+                               || Msg <- Msgs],
+            {noreply, State#state{buffer = Buffered}};
+        _ ->
+            {noreply, State}
+    end;
+handle_info(Info, State) ->
+    ?LOG_INFO("Info: ~p", [Info]),
     {noreply, State}.
+
+
+
+
 terminate(_Reason, _State) ->
     ok.
 code_change(_OldVsn, State, _Extra) ->
@@ -50,3 +84,7 @@ format_status(_Opt, Status) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+dispatch_messages(#message{actor = Actor} = Msg) ->
+    Actor:start(Msg);
+dispatch_messages(_) ->
+    false.
