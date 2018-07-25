@@ -1,7 +1,15 @@
 {"1.1.0",
 [{<<"goldrush">>,{pkg,<<"goldrush">>,<<"0.1.9">>},1},
  {<<"lager">>,{pkg,<<"lager">>,<<"3.5.0">>},0},
- {<<"recon">>,{pkg,<<"recon">>,<<"2.3.2">>},0}]}.
+ {<<"recon">>,{pkg,<<"recon">>,<<"2.3.2">>},0},
+ {<<"sync">>,
+  {git,"https://github.com/rustyio/sync.git",
+       {ref,"11df81d196eaab2d84caa3fbe8def5d476ef79d8"}},
+  1},
+ {<<"tecipe">>,
+  {git,"git://github.com/bisphone/tecipe.git",
+       {ref,"4a9972e7cbaa891d54a8e85ca9f4d039d30406c4"}},
+  0}]}.
 [
 {pkg_hash,[
  {<<"goldrush">>, <<"F06E5D5F1277DA5C413E84D5A2924174182FB108DABB39D5EC548B27424CD106">>},
