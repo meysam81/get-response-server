@@ -1,0 +1,4 @@
+## Name of the node
+-name my_app_v4-dev@127.0.0.1
+## Cookie for distributed erlang
+-setcookie my_app_v4-cookie
