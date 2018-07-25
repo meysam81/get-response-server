@@ -29,6 +29,8 @@ start(Transport, Socket, Opts) ->
 %%% gen_server callbacks
 %%%===================================================================
 init([Transport, Socket, _Opts]) ->
+    process_flag(trap_exit, true),
+
     proc_lib:init_ack({ok, self()}),
 
 
