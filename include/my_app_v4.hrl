@@ -6,9 +6,23 @@
 
 -record(message, {object :: term(),
                   type :: request | response,
-                  flag :: 2#00100000 | 2#00010000,
+                  flags :: 2#00100000 | 2#00010000,
                   tracking_id :: integer(),
                   actor :: module()}).
+
+-define(FRAME_HEADER_BYTE_SIZE, 11).
+
+-define(FRAME_LEN_BYTE_SIZE, 4).
+-define(FRAME_LEN_BIT_SIZE, 32).
+
+-define(FRAME_CODE_BYTE_SIZE, 1).
+-define(FRAME_CODE_BIT_SIZE, 8).
+
+-define(FRAME_FLAGS_BYTE_SIZE, 2).
+-define(FRAME_FLAGS_BIT_SIZE, 16).
+
+-define(FRAME_TRACKING_ID_BYTE_SIZE, 4).
+-define(FRAME_TRACKING_ID_BIT_SIZE, 32).
 
 -define(NAME_TABLE, name_table).
 -define(CODE_TABLE, code_table).

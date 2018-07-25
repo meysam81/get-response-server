@@ -52,14 +52,14 @@ get_list() ->
 
 get_by_code(Code) ->
     case ets:lookup(?CODE_TABLE, Code) of
-        [{Code, Name, Actor, Codec}] = Response ->
+        [{_Code, _Name, _Actor, _Codec}] = Response ->
             Response;
         _ ->
             {error, undefined}
     end.
 get_by_name(Name) ->
     case ets:lookup(?NAME_TABLE, Name) of
-        [{Name, Code, Actor, Codec}] = Response ->
+        [{_Code, _Name, _Actor, _Codec}] = Response ->
             Response;
         _ ->
             {error, undefined}
