@@ -51,6 +51,16 @@ get_list() ->
      ].
 
 get_by_code(Code) ->
-    ets:lookup(?CODE_TABLE, Code).
+    case ets:lookup(?CODE_TABLE, Code) of
+        [{Code, Name, Actor, Codec}] = Response ->
+            Response;
+        _ ->
+            {error, undefined}
+    end.
 get_by_name(Name) ->
-    ets:lookup(?NAME_TABLE, Name).
+    case ets:lookup(?NAME_TABLE, Name) of
+        [{Name, Code, Actor, Codec}] = Response ->
+            Response;
+        _ ->
+            {error, undefined}
+    end.
