@@ -1,0 +1,5 @@
+package my_app_v4.sample.type;
+// messageCode = 1
+message  FactResp {
+    required int32 y = 1;
+}

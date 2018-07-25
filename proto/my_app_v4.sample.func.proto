@@ -1,0 +1,6 @@
+package my_app_v4.sample.func;
+import "my_app_v4.sample.type.proto";
+// messageCode = 51
+message Fact {
+    required int32 x = 1;
+}
