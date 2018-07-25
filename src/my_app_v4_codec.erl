@@ -1,11 +1,14 @@
 -module(my_app_v4_codec).
 
--export([encode_frame/1]).
+-export([encode_frame/1,
+         deframe_decode/1]).
 
 -include("my_app_v4.hrl").
 -include("my_app_v4_sample_func.hrl").
 -include("my_app_v4_sample_type.hrl").
 
+
+%% ---------------------------- encode frame --------------------------------
 encode_frame(#message{object = Object,
                       tracking_id = Tracking_id,
                       flags = Flags}) ->
@@ -41,4 +44,41 @@ encode_object(Object) ->
             Error;
         [{_Name, Code, _Actor, Codec}] ->
             {Codec:encode_msg(Object), Code}
+    end.
+
+
+
+
+%% ---------------------------- decode frame --------------------------------
+deframe_decode(<<_FrameLen:?FRAME_LEN_BYTE_SIZE/binary,
+                 Code:?FRAME_CODE_BIT_SIZE/integer,
+                 Flags:?FRAME_FLAGS_BIT_SIZE/integer,
+                 Tracking_id:?FRAME_TRACKING_ID_BIT_SIZE/integer,
+                 Payload/binary>>) ->
+
+    case decode_object(Payload, Code) of
+        {error, Reason} = Error ->
+            ?LOG_ERROR("Payload: ~p, Reason: ~p",
+                       [Payload, Reason]),
+            Error;
+        Object ->
+            Type = case Flags of
+                       2#00100000 -> request;
+                       2#00010000 -> response;
+                       _ -> unknown
+                   end,
+            #message{object = Object,
+                     flags = Flags,
+                     type = Type,
+                     tracking_id = Tracking_id}
+    end.
+
+
+
+decode_object(Payload, Code) ->
+    case my_app_v4_dict:get_by_code(Code) of
+        {error, _Reason} = Error ->
+            Error;
+        [{_Code, Name, _Actor, Codec}] ->
+            Codec:decode_msg(Payload, Name)
     end.
