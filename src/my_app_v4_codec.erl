@@ -63,7 +63,7 @@ deframe_decode(<<_FrameLen:?FRAME_LEN_BYTE_SIZE/binary,
             ?LOG_ERROR("Payload: ~p, Reason: ~p",
                        [Payload, Reason]),
             Error;
-        Object ->
+        {Object, Actor} ->
             Type = case Flags of
                        2#00100000 -> request;
                        2#00010000 -> response;
@@ -72,6 +72,7 @@ deframe_decode(<<_FrameLen:?FRAME_LEN_BYTE_SIZE/binary,
             #message{object = Object,
                      flags = Flags,
                      type = Type,
+                     actor = Actor,
                      tracking_id = Tracking_id}
     end.
 
@@ -81,8 +82,8 @@ decode_object(Payload, Code) ->
     case my_app_v4_dict:get_by_code(Code) of
         {error, _Reason} = Error ->
             Error;
-        [{_Code, Name, _Actor, Codec}] ->
-            Codec:decode_msg(Payload, Name)
+        [{_Code, Name, Actor, Codec}] ->
+            {Codec:decode_msg(Payload, Name), Actor}
     end.
 
 
@@ -91,19 +92,17 @@ decode_object(Payload, Code) ->
 
 parse_buffer(OldBuffer, NewData) ->
     NewBuffer = <<OldBuffer/binary, NewData/binary>>,
-    parse_buffer(#parsed_buffer{framed = <<>>, buffered = NewBuffer}).
+    parse_buffer(#parsed_buffer{framed = [], buffered = NewBuffer}).
 parse_buffer(#parsed_buffer{buffered = <<>>} = Buffer) ->
     Buffer;
-parse_buffer(#parsed_buffer{framed = <<>>, buffered = <<>>}) ->
-    {malformed_frame, empty};
 parse_buffer(#parsed_buffer{framed = Framed, buffered = Buffered} = Buffer) ->
     case get_frame(Buffered) of
         {complete_frame, NewFrame, <<>>} ->
-            #parsed_buffer{framed = <<Framed/binary, NewFrame/binary>>,
+            #parsed_buffer{framed = Framed ++  [NewFrame],
                            buffered = <<>>};
         {complete_frame, NewFrame, NewBuffer} ->
             parse_buffer(#parsed_buffer
-                         {framed = <<Framed/binary, NewFrame/binary>>,
+                         {framed = Framed ++  [NewFrame],
                           buffered = NewBuffer});
         {incomplete_frame, Buffered} ->
             Buffer;
@@ -112,6 +111,8 @@ parse_buffer(#parsed_buffer{framed = Framed, buffered = Buffered} = Buffer) ->
                        [?MAX_FRAME_BYTE_SIZE]),
             Malformed
     end.
+get_frame(<<>>) ->
+    {malformed_frame, empty};
 get_frame(<<FrameLen:?FRAME_LEN_BIT_SIZE/integer, _/binary>> = Buffer) ->
     case byte_size(Buffer) of
         BufferLen when BufferLen >= ?MAX_FRAME_BYTE_SIZE ->

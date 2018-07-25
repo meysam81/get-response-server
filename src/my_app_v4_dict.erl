@@ -40,13 +40,13 @@ get_list() ->
       %% =============== funcs ==================
       #{name => 'my_app_v4.sample.func.Fact',
         code => 51,
-        actor => undefined,
+        actor => my_app_v4_actor,
         codec => my_app_v4_sample_func},
 
       %% =============== types ==================
       #{name => 'my_app_v4.sample.type.FactResp',
         code => 1,
-        actor => my_app_v4_actor,
+        actor => undefined,
         codec => my_app_v4_sample_type}
      ].
 
