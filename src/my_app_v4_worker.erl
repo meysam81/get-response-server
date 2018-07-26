@@ -52,8 +52,7 @@ handle_cast(#message{} = Message, #state{transport = Transport,
     {ok, FramedMsg} = my_app_v4_codec:encode_frame(Message),
     Transport:send(Socket, FramedMsg),
     {noreply, State};
-handle_cast(Request, State) ->
-    ?LOG_DEBUG("Request: ~p", [Request]),
+handle_cast(_Request, State) ->
     {noreply, State}.
 
 
@@ -64,13 +63,12 @@ handle_info({tcp, Socket, Data}, #state{socket = Socket,
             Msgs = [my_app_v4_codec:deframe_decode(Frame) ||
                        Frame <- Framed],
             [dispatch_messages(Msg#message{socket_pid = self()})
-                               || Msg <- Msgs],
+             || Msg <- Msgs],
             {noreply, State#state{buffer = Buffered}};
         _ ->
             {noreply, State}
     end;
-handle_info(Info, State) ->
-    ?LOG_INFO("Info: ~p", [Info]),
+handle_info(_Info, State) ->
     {noreply, State}.
 
 
